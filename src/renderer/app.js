@@ -22953,11 +22953,10 @@ function bindCoverHoldZoom(wrapEl) {
       const tile = document.createElement('div');
       tile.className = 'sp-tile';
       const thumb = (typeof getTrackThumbUrl === 'function' ? getTrackThumbUrl(track) : '') || track.thumbnail || track.cover || '';
-      const img = document.createElement('img');
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.src = thumb;
-      img.alt = '';
+      const tileCover = document.createElement('div');
+      tileCover.className = 'sp-tile-cover';
+      appendCoverImage(tileCover, thumb);
+      tile.appendChild(tileCover);
       const text = document.createElement('div');
       text.className = 'sp-tile-text';
       const title = document.createElement('div');
@@ -22968,7 +22967,6 @@ function bindCoverHoldZoom(wrapEl) {
       sub.textContent = track.artist || track.uploader || 'Unknown artist';
       text.appendChild(title);
       text.appendChild(sub);
-      tile.appendChild(img);
       tile.appendChild(text);
       tile.addEventListener('click', () => {
         playTrack(track);
@@ -23032,6 +23030,28 @@ function bindCoverHoldZoom(wrapEl) {
     return covers;
   }
 
+  // Cover art helper: show a music-note placeholder instead of the browser's broken-image
+  // icon when there is no cover or the image fails to load.
+  function showCoverPlaceholder(wrap) {
+    wrap.classList.add('sp-card-cover-empty');
+    wrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
+  }
+
+  function appendCoverImage(wrap, cover) {
+    if (!cover) {
+      showCoverPlaceholder(wrap);
+      return null;
+    }
+    const img = document.createElement('img');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = '';
+    img.addEventListener('error', () => showCoverPlaceholder(wrap), { once: true });
+    img.src = cover;
+    wrap.appendChild(img);
+    return img;
+  }
+
   function spCard({ cover, gridCovers, title, sub, onClick, isExplicit = false }) {
     const card = document.createElement('div');
     card.className = 'sp-card';
@@ -23051,22 +23071,7 @@ function bindCoverHoldZoom(wrapEl) {
       });
       coverWrap.appendChild(grid);
     } else {
-      // No cover (or one that fails to load) used to show the browser's broken-image icon.
-      const showPlaceholder = () => {
-        coverWrap.classList.add('sp-card-cover-empty');
-        coverWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
-      };
-      if (cover) {
-        const img = document.createElement('img');
-        img.loading = 'lazy';
-        img.decoding = 'async';
-        img.alt = '';
-        img.addEventListener('error', showPlaceholder, { once: true });
-        img.src = cover;
-        coverWrap.appendChild(img);
-      } else {
-        showPlaceholder();
-      }
+      appendCoverImage(coverWrap, cover);
     }
 
     const titleEl = document.createElement('div');
